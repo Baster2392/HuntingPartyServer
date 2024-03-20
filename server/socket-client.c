@@ -8,6 +8,8 @@
 
 #define PORT 5000
 
+// to jest useless jak coÅ›
+
 int main() {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
@@ -24,23 +26,23 @@ int main() {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
 
-    // Konwersja adresu IP z kropkowymi dziesiêtnymi na binarne
+    // Konwersja adresu IP z kropkowymi dziesiï¿½tnymi na binarne
     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
         perror("Invalid address/ Address not supported");
         return -1;
     }
 
-    // Nawi¹zanie po³¹czenia z serwerem
+    // Nawiï¿½zanie poï¿½ï¿½czenia z serwerem
     if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         perror("Connection failed");
         return -1;
     }
 
-    // Wys³anie wiadomoœci do serwera
+    // Wysï¿½anie wiadomoï¿½ci do serwera
     send(sock, hello, strlen(hello), 0);
     printf("Hello message sent to server\n");
 
-    // Odbiór odpowiedzi od serwera
+    // Odbiï¿½r odpowiedzi od serwera
     valread = read(sock, buffer, 1024);
     printf("%s\n", buffer);
 

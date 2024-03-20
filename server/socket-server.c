@@ -6,29 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
-
-struct Player {
-	int id;
-	int score;
-};
-
-struct Target {
-	int id;
-	int positionx;
-	int positiony;
-	int type;
-	bool isAlive;
-
-	void kill()
-	{
-		isAlive = false;
-	}
-
-	void moveUpwards()
-	{
-		positionY++;
-	}
-};
+#include "struct/pqueue.h"
 
 void*
 connection_handler(void* socket_desc) {
@@ -72,9 +50,11 @@ main(int argc, char* argv[]) {
 
 	pthread_t thread_id;
 
+    // create socket
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);
 	memset(&serv_addr, '0', sizeof(serv_addr));
 
+    // configure connection
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_addr.sin_port = htons(5000);
