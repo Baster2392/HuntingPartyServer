@@ -8,13 +8,35 @@
 #include <pthread.h>
 #include "struct/pqueue.h"
 
+#define BUFFER 2000
+
+struct Player {
+	int id;
+	int score;
+};
+
+struct Target {
+	int id;
+	int positionx;
+	int positiony;
+	int type;
+	int isAlive;
+};
+
+// global variables
+int id_counter = 1;
+
+// main resources
+pqueue* players = NULL;
+pqueue* communicates = NULL;
+
 void*
 connection_handler(void* socket_desc) {
 
 	/* Get the socket descriptor */
 	int sock = *(int*)socket_desc;
 	int read_size;
-	char* message, client_message[2000];
+	char* message, client_message[BUFFER];
 
 	/* Send some messages to the client */
 	message = "Greetings! I am your connection handler\n";
@@ -27,14 +49,14 @@ connection_handler(void* socket_desc) {
 	write(sock, message, strlen(message));
 
 	do {
-		read_size = recv(sock, client_message, 2000, 0);
+		read_size = recv(sock, client_message, BUFFER, 0);
 		client_message[read_size] = '\0';
 
 		/* Send the message back to client */
 		write(sock, client_message, strlen(client_message));
 
 		/* Clear the message buffer */
-		memset(client_message, 0, 2000);
+		memset(client_message, 0, BUFFER);
 	} while (read_size > 2); /* Wait for empty line */
 
 	fprintf(stderr, "Client disconnected\n");
@@ -49,6 +71,8 @@ main(int argc, char* argv[]) {
 	struct sockaddr_in serv_addr;
 
 	pthread_t thread_id;
+
+	// initialize structs
 
     // create socket
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);

@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5353a0fb-2eaf-4c10-8099-b95a945c0b6b" name="Changes" comment="Init commit">
-      <change afterPath="$PROJECT_DIR$/server/struct/pqueue.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server/struct/pqueue.h" afterDir="false" />
+    <list default="true" id="5353a0fb-2eaf-4c10-8099-b95a945c0b6b" name="Changes" comment="Added priority queue implementation">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/socket-client.c" beforeDir="false" afterPath="$PROJECT_DIR$/server/socket-client.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/socket-server.c" beforeDir="false" afterPath="$PROJECT_DIR$/server/socket-server.c" afterDir="false" />
     </list>
@@ -19,7 +18,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="client" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -36,15 +35,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;//wsl.localhost/Ubuntu/home/baster/Studia/pr/HuntParty/client/main.py&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.main.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "server",
+    "last_opened_file_path": "//wsl.localhost/Ubuntu/home/baster/Studia/pr/HuntParty/client/main.py"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="\\wsl.localhost\Ubuntu\home\baster\Studia\pr\HuntParty\server\struct" />
@@ -97,8 +96,8 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.Unnamed" />
       <item itemvalue="Python.main" />
+      <item itemvalue="Python.Unnamed" />
     </list>
   </component>
   <component name="SharedIndexes">
@@ -125,7 +124,15 @@
       <option name="project" value="LOCAL" />
       <updated>1710959543777</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Added priority queue implementation">
+      <option name="closed" value="true" />
+      <created>1710962158037</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1710962158037</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -153,6 +160,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Init commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="Init commit" />
+    <MESSAGE value="Added priority queue implementation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added priority queue implementation" />
   </component>
 </project>

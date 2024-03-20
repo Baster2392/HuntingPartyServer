@@ -26,23 +26,23 @@ int main() {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
 
-    // Konwersja adresu IP z kropkowymi dziesi�tnymi na binarne
+    // Konwersja adresu IP z kropkowymi dziesiatnymi na binarne
     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
         perror("Invalid address/ Address not supported");
         return -1;
     }
 
-    // Nawi�zanie po��czenia z serwerem
+    // Nawiazanie polaczenia z serwerem
     if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         perror("Connection failed");
         return -1;
     }
 
-    // Wys�anie wiadomo�ci do serwera
+    // Wyslanie wiadomosci do serwera
     send(sock, hello, strlen(hello), 0);
     printf("Hello message sent to server\n");
 
-    // Odbi�r odpowiedzi od serwera
+    // Odbior odpowiedzi od serwera
     valread = read(sock, buffer, 1024);
     printf("%s\n", buffer);
 
