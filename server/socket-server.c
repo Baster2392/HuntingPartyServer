@@ -10,11 +10,18 @@
 
 #define BUFFER 2000
 
+typedef struct Player Player;
 struct Player {
 	int id;
 	int score;
 };
+void print_player(void* data)
+{
+    Player* player = (Player*) data;
+    fprintf(stderr, "Player{id=%d, score=%d}", player->id, player->score);
+}
 
+typedef struct Target Target;
 struct Target {
 	int id;
 	int positionx;
@@ -73,6 +80,14 @@ main(int argc, char* argv[]) {
 	pthread_t thread_id;
 
 	// initialize structs
+	pqueue* players = NULL;
+	pqueue* targets = NULL;
+
+	Player* player = (Player*)malloc(sizeof(Player));
+	player->id = 1;
+	player->score = 300;
+	qinsert(&players, player, 1);
+	qlist(players, print_player);
 
     // create socket
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);
