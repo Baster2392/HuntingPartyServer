@@ -23,13 +23,23 @@ def main():
 
             # Get answer from server
             server_response = client_socket.recv(1024).decode()
-            print("Odpowiedź serwera:", server_response)
+            player_id = little_endian_to_int(server_response)
+            print("Odpowiedź serwera:", str(player_id))
 
     except ConnectionRefusedError:
         print("Nie można połączyć się z serwerem.")
     finally:
         # Close socket
         client_socket.close()
+
+
+def little_endian_to_int(message):
+    decoded_int = 0
+    multiplier = 1
+    for byte in message.encode():
+        decoded_int += int(str(byte), 16) * multiplier
+        multiplier *= 256
+    return decoded_int
 
 
 if __name__ == "__main__":

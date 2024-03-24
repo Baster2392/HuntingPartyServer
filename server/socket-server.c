@@ -31,7 +31,7 @@ struct Target {
 };
 
 // global variables
-int id_counter = 1;
+unsigned int id_counter = 256;
 
 // main resources
 pqueue* players = NULL;
@@ -45,22 +45,31 @@ connection_handler(void* socket_desc) {
 	int read_size;
 	char* message, client_message[BUFFER];
 
-	/* Send some messages to the client */
-	message = "Greetings! I am your connection handler\n";
-	write(sock, message, strlen(message));
+	/* Create new player */
+	Player* player = (Player*)malloc(sizeof(Player));
+	player->id = id_counter++;
+	player->score = 0;
+	qinsert(&players, player, player->id);
+	fprintf(stderr, "Player %d joined.\n", player->id);
 
-	message = "Now type something and i shall repeat what you type\n";
-	write(sock, message, strlen(message));
-
-	message = "Empty line will close the connection\n";
-	write(sock, message, strlen(message));
+	/* Send client id to client */
+	send(sock, &(player->id), sizeof(player->id), 0);
 
 	do {
 		read_size = recv(sock, client_message, BUFFER, 0);
 		client_message[read_size] = '\0';
+        fprintf(stderr, "%s\n", client_message);
 
-		/* Send the message back to client */
-		write(sock, client_message, strlen(client_message));
+		if (strcmp(client_message, "ready") == 0)
+		{
+		    fprintf(stderr, "Player %d ready.\n", player->id);
+		}
+		else
+		{
+		    fprintf(stderr, "Player %d not ready.\n", player->id);
+		}
+
+		send(sock, &(player->id), sizeof(player->id), 0);
 
 		/* Clear the message buffer */
 		memset(client_message, 0, BUFFER);
@@ -82,12 +91,6 @@ main(int argc, char* argv[]) {
 	// initialize structs
 	pqueue* players = NULL;
 	pqueue* targets = NULL;
-
-	Player* player = (Player*)malloc(sizeof(Player));
-	player->id = 1;
-	player->score = 300;
-	qinsert(&players, player, 1);
-	qlist(players, print_player);
 
     // create socket
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);
