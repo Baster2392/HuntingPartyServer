@@ -7,6 +7,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "struct/pqueue.h"
+#include "struct/list.h"
 
 #define BUFFER 2000
 
@@ -24,18 +25,20 @@ void print_player(void* data)
 typedef struct Target Target;
 struct Target {
 	int id;
-	int positionx;
-	int positiony;
+	int position_x;
+	int position_y;
 	int type;
 	int isAlive;
 };
 
 // global variables
-unsigned int id_counter = 256;
+unsigned int id_counter = 1;
+unsigned int player_counter = 0;
 
 // main resources
-pqueue* players = NULL;
-pqueue* communicates = NULL;
+List* players = NULL;
+List* communicates = NULL;
+List* threads = NULL;
 
 void*
 connection_handler(void* socket_desc) {
@@ -47,13 +50,26 @@ connection_handler(void* socket_desc) {
 
 	/* Create new player */
 	Player* player = (Player*)malloc(sizeof(Player));
-	player->id = id_counter++;
+	player->id = (id_counter++);
 	player->score = 0;
-	qinsert(&players, player, player->id);
+
+    players = insertAtEnd(players, player, player->id);
 	fprintf(stderr, "Player %d joined.\n", player->id);
+    player_counter++;
+    display(players, print_player);
 
 	/* Send client id to client */
-	send(sock, &(player->id), sizeof(player->id), 0);
+	send(sock, &(player->id), sizeof(int), 0);
+    read_size = recv(sock, client_message, BUFFER, 0);
+    client_message[read_size] = '\0';
+    if (strcmp(client_message, "received_id") != 0)
+    {
+        fprintf(stderr, "Communication error.");
+        break;
+    }
+
+    /* Send player number */
+    send(sock, &player_counter, sizeof(int), 0);
 
 	do {
 		read_size = recv(sock, client_message, BUFFER, 0);
@@ -69,14 +85,17 @@ connection_handler(void* socket_desc) {
 		    fprintf(stderr, "Player %d not ready.\n", player->id);
 		}
 
-		send(sock, &(player->id), sizeof(player->id), 0);
-
 		/* Clear the message buffer */
 		memset(client_message, 0, BUFFER);
-	} while (read_size > 2); /* Wait for empty line */
+	} while (1 == 1); /* Wait for empty line */
 
+    // Disconnect player
 	fprintf(stderr, "Client disconnected\n");
+    deleteByIndex(&players, player->id);
+    player_counter--;
 
+    // Delete thread from threads
+    deleteById(&threads, (int)pthread_self());
 	close(sock);
 	pthread_exit(NULL);
 }
@@ -87,10 +106,6 @@ main(int argc, char* argv[]) {
 	struct sockaddr_in serv_addr;
 
 	pthread_t thread_id;
-
-	// initialize structs
-	pqueue* players = NULL;
-	pqueue* targets = NULL;
 
     // create socket
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -109,5 +124,9 @@ main(int argc, char* argv[]) {
 		connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
 		fprintf(stderr, "Connection accepted\n");
 		pthread_create(&thread_id, NULL, connection_handler, (void*)&connfd);
+        // save thread
+        //                          NULL!!!          our data
+        insertAtEnd(threads, NULL, thread_id);  // we store data in node_id parameter !!!!!!
+        // to access thread id we call getIdByIndex
 	}
 }

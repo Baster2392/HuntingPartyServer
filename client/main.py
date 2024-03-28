@@ -10,9 +10,18 @@ def main():
     try:
         # Try to connect to server
         client_socket.connect((server_address, server_port))
+        # Get id
+        server_response = client_socket.recv(1024).decode()
+        player_id = little_endian_to_int(server_response)
+        print("Przydzielone id:", str(player_id))
 
-        # Read messages from server
-        print("Otrzymano wiadomości od serwera:")
+        # Send confirmation of receiving id
+        message = "received_id"
+        client_socket.sendall(message.encode())
+
+        server_response = client_socket.recv(1024).decode()
+        player_counter = little_endian_to_int(server_response)
+        print("Liczba graczy:", str(player_counter))
 
         # Send message to server
         while True:
