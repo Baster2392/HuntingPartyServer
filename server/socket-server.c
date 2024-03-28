@@ -1,6 +1,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+//#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -34,23 +34,29 @@ struct Target {
 // global variables
 unsigned int id_counter = 1;
 unsigned int player_counter = 0;
+unsigned int ready_counter = 0;
+int isGameStarted = 0;
 
 // main resources
 List* players = NULL;
 List* communicates = NULL;
 List* threads = NULL;
+List* socks = NULL;
 
-void*
-connection_handler(void* socket_desc) {
+void* connection_handler(void* socket_desc) {
 
 	/* Get the socket descriptor */
 	int sock = *(int*)socket_desc;
 	int read_size;
-	char* message, client_message[BUFFER];
+	char client_message[BUFFER];
+    memset(client_message, 0, BUFFER);
+
+    int thread_id = id_counter++;   // different from in threads
+    insertAtEnd(socks, &sock, thread_id);
 
 	/* Create new player */
 	Player* player = (Player*)malloc(sizeof(Player));
-	player->id = (id_counter++);
+	player->id = thread_id;
 	player->score = 0;
 
     players = insertAtEnd(players, player, player->id);
@@ -58,41 +64,51 @@ connection_handler(void* socket_desc) {
     player_counter++;
     display(players, print_player);
 
-	/* Send client id to client */
+	/* Send client_id to client */
 	send(sock, &(player->id), sizeof(int), 0);
+    // get confirmation
     read_size = recv(sock, client_message, BUFFER, 0);
     client_message[read_size] = '\0';
     if (strcmp(client_message, "received_id") != 0)
     {
-        fprintf(stderr, "Communication error.");
-        break;
+        fprintf(stderr, "Communication error.\n");
+        exit(0);
     }
+    memset(client_message, 0, BUFFER);  // clean buffer
 
-    /* Send player number */
-    send(sock, &player_counter, sizeof(int), 0);
+    /* Wait for "ready" status */
+    read_size = recv(sock, client_message, BUFFER, 0);
+    client_message[read_size] = '\0';
 
-	do {
-		read_size = recv(sock, client_message, BUFFER, 0);
-		client_message[read_size] = '\0';
-        fprintf(stderr, "%s\n", client_message);
+    if (strcmp(client_message, "ready") == 0)
+    {
+        memset(client_message, 0, BUFFER);
+        ready_counter += 1;
+        fprintf(stderr, "Player %d ready.\n", player->id);
 
-		if (strcmp(client_message, "ready") == 0)
-		{
-		    fprintf(stderr, "Player %d ready.\n", player->id);
-		}
-		else
-		{
-		    fprintf(stderr, "Player %d not ready.\n", player->id);
-		}
-
-		/* Clear the message buffer */
-		memset(client_message, 0, BUFFER);
-	} while (1 == 1); /* Wait for empty line */
+        if (ready_counter == player_counter && player_counter > 1)
+        {
+            fprintf(stderr, "Game staring...");
+            /* Send "starting game" status */
+            strcpy(client_message, "starting_game\0");
+            send(sock, &client_message, strlen(client_message), 0);
+            memset(client_message, 0, BUFFER);
+            /* We can call startGame() from player's thread, because only one player
+             * will meet condition (ready_counter == player_counter && player_counter > 1) */
+            // TODO: Call start of game
+        }
+    } else
+    {
+        fprintf(stderr, "Communication error.\n");
+        exit(0);
+    }
+    memset(client_message, 0, BUFFER);
 
     // Disconnect player
 	fprintf(stderr, "Client disconnected\n");
-    deleteByIndex(&players, player->id);
+    deleteById(&players, player->id);
     player_counter--;
+    ready_counter--;
 
     // Delete thread from threads
     deleteById(&threads, (int)pthread_self());
@@ -100,9 +116,8 @@ connection_handler(void* socket_desc) {
 	pthread_exit(NULL);
 }
 
-int
-main(int argc, char* argv[]) {
-	int listenfd = 0, connfd = 0;
+int main() {
+	int listenfd, connfd = 0;
 	struct sockaddr_in serv_addr;
 
 	pthread_t thread_id;
@@ -125,8 +140,7 @@ main(int argc, char* argv[]) {
 		fprintf(stderr, "Connection accepted\n");
 		pthread_create(&thread_id, NULL, connection_handler, (void*)&connfd);
         // save thread
-        //                          NULL!!!          our data
-        insertAtEnd(threads, NULL, thread_id);  // we store data in node_id parameter !!!!!!
+        threads = insertAtEnd(threads, NULL, thread_id);
         // to access thread id we call getIdByIndex
 	}
 }

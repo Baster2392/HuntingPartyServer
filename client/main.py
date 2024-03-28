@@ -1,4 +1,5 @@
 import socket
+import time
 
 def main():
     server_address = '127.0.0.1'
@@ -18,22 +19,17 @@ def main():
         # Send confirmation of receiving id
         message = "received_id"
         client_socket.sendall(message.encode())
+        time.sleep(0.5)
 
+        # Send "ready" status
+        message = "ready"
+        client_socket.sendall(message.encode())
+
+        # Wait for "starting_game" status
         server_response = client_socket.recv(1024).decode()
-        player_counter = little_endian_to_int(server_response)
-        print("Liczba graczy:", str(player_counter))
-
-        # Send message to server
-        while True:
-            message = input("Wpisz wiadomość (pusty wiersz aby zakończyć): ")
-            if not message:
-                break
-            client_socket.sendall(message.encode())
-
-            # Get answer from server
-            server_response = client_socket.recv(1024).decode()
-            player_id = little_endian_to_int(server_response)
-            print("Odpowiedź serwera:", str(player_id))
+        print(server_response)
+        if server_response == "starting_game":
+            print("Game is starting")
 
     except ConnectionRefusedError:
         print("Nie można połączyć się z serwerem.")
