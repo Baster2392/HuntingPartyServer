@@ -13,4 +13,11 @@
     <orderEntry type="jdk" jdkName="Python 3.10.12 WSL (Ubuntu): (/home/baster/.virtualenvs/HuntParty/bin/python)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
+  <component name="PyNamespacePackagesService">
+    <option name="namespacePackageFolders">
+      <list>
+        <option value="$MODULE_DIR$/client" />
+      </list>
+    </option>
+  </component>
 </module>

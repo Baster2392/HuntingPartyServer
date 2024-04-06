@@ -27,9 +27,7 @@ void* connection_handler(void* socket_desc) {
 
 	/* Get the socket descriptor */
 	int sock = *(int*)socket_desc;
-	int read_size;
-	char client_message[BUFFER];
-    memset(client_message, 0, BUFFER);
+    Message* message = createNewEmptyMessage();
 
     int thread_id = id_counter++;   // different from in threads
     insertAtEnd(socks, &sock, thread_id);
@@ -45,34 +43,24 @@ void* connection_handler(void* socket_desc) {
     display(players, print_player);
 
 	/* Send client_id to client */
-	send(sock, &(player->id), sizeof(int), 0);
-    // get confirmation
-    read_size = recv(sock, client_message, BUFFER, 0);
-    client_message[read_size] = '\0';
-    if (strcmp(client_message, "received_id") != 0)
-    {
-        fprintf(stderr, "Communication error.\n");
-        exit(0);
-    }
-    memset(client_message, 0, BUFFER);  // clean buffer
+    setContent(message, itos(player->id));
+	send(sock, message, sizeof(Message), 0);
 
     /* Wait for "ready" status */
-    read_size = recv(sock, client_message, BUFFER, 0);
-    client_message[read_size] = '\0';
+    recv(sock, message, sizeof(Message), 0);
+    // TODO: check if controlSum has correct value
 
-    if (strcmp(client_message, "ready") == 0)
+    if (strcmp(message->content, "ready") == 0)
     {
-        memset(client_message, 0, BUFFER);
         ready_counter += 1;
         fprintf(stderr, "Player %d ready.\n", player->id);
 
         if (ready_counter == player_counter && player_counter > 1)
         {
-            fprintf(stderr, "Game staring...");
+            fprintf(stderr, "Game staring...\n");
             /* Send "starting game" status */
-            strcpy(client_message, "starting_game\0");
-            send(sock, &client_message, strlen(client_message), 0);
-            memset(client_message, 0, BUFFER);
+            setContent(message, "starting_game");
+            send(sock, message, sizeof(Message), 0);
 
             /* We can call startGame() from player's thread, because only one player
              * will meet condition (ready_counter == player_counter && player_counter > 1) */
@@ -83,7 +71,14 @@ void* connection_handler(void* socket_desc) {
         fprintf(stderr, "Communication error.\n");
         exit(0);
     }
-    memset(client_message, 0, BUFFER);
+
+    // Waiting for other players to join
+    while (!isGameStarted)
+    {
+        /* TODO: send number of players if players are not ready
+         * or "starting_game" communicate if players are ready
+         * and number of players is bigger than 1*/
+    }
 
     // Disconnect player
 	fprintf(stderr, "Client disconnected\n");

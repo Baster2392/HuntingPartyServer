@@ -18,10 +18,14 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5353a0fb-2eaf-4c10-8099-b95a945c0b6b" name="Changes" comment="Completed first stage of client handling">
-      <change afterPath="$PROJECT_DIR$/server/struct/structs.h" afterDir="false" />
+    <list default="true" id="5353a0fb-2eaf-4c10-8099-b95a945c0b6b" name="Changes" comment="Fixed Message functions">
+      <change afterPath="$PROJECT_DIR$/client/message.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/pythonProject.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/pythonProject.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/socket-client.c" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/server/socket-server.c" beforeDir="false" afterPath="$PROJECT_DIR$/server/socket-server.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/struct/structs.h" beforeDir="false" afterPath="$PROJECT_DIR$/server/struct/structs.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,8 +38,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
         <option value="CMakeLists.txt" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -506,7 +510,8 @@
       <workItem from="1711563973898" duration="6516000" />
       <workItem from="1711645198168" duration="8940000" />
       <workItem from="1711717330722" duration="5000" />
-      <workItem from="1712415390154" duration="1605000" />
+      <workItem from="1712415390154" duration="2731000" />
+      <workItem from="1712418271324" duration="7345000" />
     </task>
     <task id="LOCAL-00001" summary="Init commit">
       <option name="closed" value="true" />
@@ -556,7 +561,23 @@
       <option name="project" value="LOCAL" />
       <updated>1711654252469</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Added structs.h">
+      <option name="closed" value="true" />
+      <created>1712417206951</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1712417206951</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Fixed Message functions">
+      <option name="closed" value="true" />
+      <created>1712417404858</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1712417404858</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -598,7 +619,9 @@
     <MESSAGE value="Sending id and getting &quot;ready&quot; status" />
     <MESSAGE value="Added List implementation" />
     <MESSAGE value="Completed first stage of client handling" />
-    <option name="LAST_COMMIT_MESSAGE" value="Completed first stage of client handling" />
+    <MESSAGE value="Added structs.h" />
+    <MESSAGE value="Fixed Message functions" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed Message functions" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
@@ -606,6 +629,6 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/HuntParty$main.coverage" NAME="main Coverage Results" MODIFIED="1711653784721" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/HuntParty$client_main.coverage" NAME="client.main Coverage Results" MODIFIED="1711645966197" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/HuntParty$client_main.coverage" NAME="client.main Coverage Results" MODIFIED="1712425483981" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

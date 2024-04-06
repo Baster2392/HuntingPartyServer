@@ -9,6 +9,7 @@ struct Player {
     int id;
     int score;
 };
+
 void print_player(void* data)
 {
     Player* player = (Player*) data;
@@ -30,7 +31,7 @@ struct Message {
     unsigned int control_sum;
 };
 
-Message* getNewEmptyMessage()
+Message* createNewEmptyMessage()
 {
     Message* newMessage = (Message*)malloc(sizeof(Message));
     newMessage->content[0] = '\0';
@@ -56,10 +57,17 @@ void setContent(Message* message, char* content)
     {
         message->content[i] = content[i];
     }
-
     i++;
     message->content[i] = '\0';
     message->control_sum = calculateControlSum(message->content);
+    //fprintf(stderr, "Content: %s, Sum: %d\n", message->content, message->control_sum);
 }
+
+char* itos(int number) {
+    static char str[20];
+    snprintf(str, sizeof(str), "%d", number);
+    return str;
+}
+
 
 
