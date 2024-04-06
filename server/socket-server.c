@@ -6,30 +6,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
-#include "struct/pqueue.h"
 #include "struct/list.h"
+#include "struct/structs.h"
 
 #define BUFFER 2000
-
-typedef struct Player Player;
-struct Player {
-	int id;
-	int score;
-};
-void print_player(void* data)
-{
-    Player* player = (Player*) data;
-    fprintf(stderr, "Player{id=%d, score=%d}", player->id, player->score);
-}
-
-typedef struct Target Target;
-struct Target {
-	int id;
-	int position_x;
-	int position_y;
-	int type;
-	int isAlive;
-};
 
 // global variables
 unsigned int id_counter = 1;
@@ -93,6 +73,7 @@ void* connection_handler(void* socket_desc) {
             strcpy(client_message, "starting_game\0");
             send(sock, &client_message, strlen(client_message), 0);
             memset(client_message, 0, BUFFER);
+
             /* We can call startGame() from player's thread, because only one player
              * will meet condition (ready_counter == player_counter && player_counter > 1) */
             // TODO: Call start of game
@@ -141,6 +122,6 @@ int main() {
 		pthread_create(&thread_id, NULL, connection_handler, (void*)&connfd);
         // save thread
         threads = insertAtEnd(threads, NULL, thread_id);
-        // to access thread id we call getIdByIndex
+        // to access thread_id we call getIdByIndex
 	}
 }
