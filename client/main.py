@@ -1,7 +1,7 @@
 import socket
 import time
 import struct
-from .message import Message
+from message import Message
 
 BUFFER_SIZE = 260
 

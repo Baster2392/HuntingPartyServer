@@ -1,2 +1,4 @@
 /server/server
 /server/client
+CMakeLists.txt
+cmake-build-debug/*

@@ -3,8 +3,6 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.12 (pythonProject)" />
   </component>
-  <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$/server">
-    <contentRoot DIR="$PROJECT_DIR$" />
-  </component>
+  <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.10.12 WSL (Ubuntu): (/home/baster/.virtualenvs/HuntParty/bin/python)" project-jdk-type="Python SDK" />
 </project>
