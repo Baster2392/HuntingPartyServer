@@ -33,8 +33,8 @@ struct Message {
 Message* getNewEmptyMessage()
 {
     Message* newMessage = (Message*)malloc(sizeof(Message));
-    newMessage->content = NULL;
-    newMessage->control_sum = NULL;
+    newMessage->content[0] = '\0';
+    newMessage->control_sum = 0;
     return newMessage;
 }
 
@@ -58,7 +58,7 @@ void setContent(Message* message, char* content)
     }
 
     i++;
-    message->content[i] = NULL;
+    message->content[i] = '\0';
     message->control_sum = calculateControlSum(message->content);
 }
 
