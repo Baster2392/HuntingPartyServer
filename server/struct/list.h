@@ -138,3 +138,15 @@ void deleteByIndex(List** head, int index) {
 
     fprintf(stderr, "Index out of range\n");
 }
+
+void freeList(List* list)
+{
+    List* previousNode = NULL;
+    List* currentNode = list;
+    while (currentNode != NULL)
+    {
+        previousNode = currentNode;
+        currentNode = currentNode->next;
+        free(previousNode);
+    }
+}

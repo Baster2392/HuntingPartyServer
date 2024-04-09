@@ -8,14 +8,17 @@
 #include <pthread.h>
 #include "struct/list.h"
 #include "struct/structs.h"
+#include "struct/message.h"
 
 #define BUFFER 2000
+#define TRUE 1
+#define FALSE 0
 
 // global variables
 unsigned int id_counter = 1;
 unsigned int player_counter = 0;
 unsigned int ready_counter = 0;
-int isGameStarted = 0;
+int isGameStarted = FALSE;
 
 // main resources
 List* players = NULL;
@@ -23,11 +26,30 @@ List* communicates = NULL;
 List* threads = NULL;
 List* socks = NULL;
 
+void* game()
+{
+    while (player_counter != ready_counter || player_counter < 2)
+    {
+        // wait for players
+    }
+
+    isGameStarted = TRUE;
+    fprintf(stderr, "Starting game\n");
+    // game loop
+    //while (TRUE)
+    {
+        sleep(4);
+    }
+    isGameStarted = FALSE;
+    fprintf(stderr, "Game ended\n");
+    pthread_exit(NULL);
+}
+
 void* connection_handler(void* socket_desc) {
 
 	/* Get the socket descriptor */
 	int sock = *(int*)socket_desc;
-    Message* message = createNewEmptyMessage();
+    Message* message;
 
     int thread_id = id_counter++;   // different from in threads
     insertAtEnd(socks, &sock, thread_id);
@@ -36,6 +58,7 @@ void* connection_handler(void* socket_desc) {
 	Player* player = (Player*)malloc(sizeof(Player));
 	player->id = thread_id;
 	player->score = 0;
+    player->isInGame = FALSE;
 
     players = insertAtEnd(players, player, player->id);
 	fprintf(stderr, "Player %d joined.\n", player->id);
@@ -43,34 +66,23 @@ void* connection_handler(void* socket_desc) {
     display(players, print_player);
 
 	/* Send client_id to client */
-    setContent(message, itos(player->id));
-	send(sock, message, sizeof(Message), 0);
+    sendMessage(sock, itos(player->id));
 
     /* Wait for "ready" status */
-    recv(sock, message, sizeof(Message), 0);
-    // TODO: check if controlSum has correct value
+    message = receiveMessage(sock);
 
     if (strcmp(message->content, "ready") == 0)
     {
         ready_counter += 1;
+        player->isInGame = TRUE;
         fprintf(stderr, "Player %d ready.\n", player->id);
-
-        if (ready_counter == player_counter && player_counter > 1)
-        {
-            fprintf(stderr, "Game staring...\n");
-            /* Send "starting game" status */
-            setContent(message, "starting_game");
-            send(sock, message, sizeof(Message), 0);
-
-            /* We can call startGame() from player's thread, because only one player
-             * will meet condition (ready_counter == player_counter && player_counter > 1) */
-            // TODO: Call start of game
-        }
     } else
     {
         fprintf(stderr, "Communication error.\n");
+        free(message);
         exit(0);
     }
+    free(message);
 
     // Waiting for other players to join
     while (!isGameStarted)
@@ -78,6 +90,12 @@ void* connection_handler(void* socket_desc) {
         /* TODO: send number of players if players are not ready
          * or "starting_game" communicate if players are ready
          * and number of players is bigger than 1*/
+    }
+
+    // Waiting for game to end
+    while (isGameStarted)
+    {
+        // wait
     }
 
     // Disconnect player
@@ -88,6 +106,9 @@ void* connection_handler(void* socket_desc) {
 
     // Delete thread from threads
     deleteById(&threads, (int)pthread_self());
+    // Free data
+    free(player);
+
 	close(sock);
 	pthread_exit(NULL);
 }
@@ -106,6 +127,10 @@ int main() {
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_addr.sin_port = htons(5000);
+
+    // create game thread
+    pthread_t game_thread_id;
+    pthread_create(&game_thread_id, NULL, game, NULL);
 
 	bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 

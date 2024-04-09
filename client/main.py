@@ -6,6 +6,7 @@ from message import Message
 BUFFER_SIZE = 260
 
 
+
 def main():
     server_address = '127.0.0.1'
     server_port = 5000
