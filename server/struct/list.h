@@ -43,6 +43,7 @@ void display(List * head, void (*displayFunc)(void*)) {
     while (temp != NULL) {
         fprintf(stderr, "Id: %d ", temp->id);
         displayFunc(temp->data);
+        fprintf(stderr, "\n");
         temp = temp->next;
     }
     fprintf(stderr,"\n");

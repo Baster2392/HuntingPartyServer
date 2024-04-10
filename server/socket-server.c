@@ -10,6 +10,7 @@
 #include "struct/structs.h"
 #include "struct/message.h"
 
+#define GAME_TIME 180 // in seconds
 #define BUFFER 2000
 #define TRUE 1
 #define FALSE 0
@@ -20,33 +21,41 @@ unsigned int player_counter = 0;
 unsigned int ready_counter = 0;
 int isGameStarted = FALSE;
 
+// Mutex is used to synchronise threads and
+// secure shared resources
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 // main resources
 List* players = NULL;
 List* communicates = NULL;
+List* targets = NULL;
 List* threads = NULL;
 List* socks = NULL;
 
+/* game() is running on other threads
+  than main and connection handlers */
 void* game()
 {
-    while (player_counter != ready_counter || player_counter < 2)
-    {
-        // wait for players
-    }
+    // wait for players
+    while (player_counter != ready_counter || player_counter < 2);
 
     isGameStarted = TRUE;
     fprintf(stderr, "Starting game\n");
     // game loop
     //while (TRUE)
     {
+        // TODO: End loop after GAME_TIME
+        /* In this loop we will be sending generated
+         * targets etc. using socks list */
         sleep(4);
     }
     isGameStarted = FALSE;
     fprintf(stderr, "Game ended\n");
+
     pthread_exit(NULL);
 }
 
 void* connection_handler(void* socket_desc) {
-
 	/* Get the socket descriptor */
 	int sock = *(int*)socket_desc;
     Message* message;
@@ -60,10 +69,12 @@ void* connection_handler(void* socket_desc) {
 	player->score = 0;
     player->isInGame = FALSE;
 
+    pthread_mutex_lock(&mutex);
     players = insertAtEnd(players, player, player->id);
 	fprintf(stderr, "Player %d joined.\n", player->id);
     player_counter++;
     display(players, print_player);
+    pthread_mutex_unlock(&mutex);
 
 	/* Send client_id to client */
     sendMessage(sock, itos(player->id));
@@ -95,19 +106,23 @@ void* connection_handler(void* socket_desc) {
     // Waiting for game to end
     while (isGameStarted)
     {
-        // wait
+        /* In this loop we will be receiving and checking
+         * if shoot is accurate */
     }
 
+    // TODO: send communicate "game_ended" to client and scores
+
     // Disconnect player
+    pthread_mutex_lock(&mutex);
 	fprintf(stderr, "Client disconnected\n");
     deleteById(&players, player->id);
+    deleteById(&socks, sock);
     player_counter--;
     ready_counter--;
 
     // Delete thread from threads
     deleteById(&threads, (int)pthread_self());
-    // Free data
-    free(player);
+    pthread_mutex_unlock(&mutex);
 
 	close(sock);
 	pthread_exit(NULL);
@@ -116,7 +131,6 @@ void* connection_handler(void* socket_desc) {
 int main() {
 	int listenfd, connfd = 0;
 	struct sockaddr_in serv_addr;
-
 	pthread_t thread_id;
 
     // create socket
