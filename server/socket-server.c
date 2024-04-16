@@ -27,7 +27,6 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // main resources
 List* players = NULL;
-List* communicates = NULL;
 List* targets = NULL;
 List* threads = NULL;
 List* socks = NULL;
@@ -38,6 +37,7 @@ void* game()
 {
     // wait for players
     while (player_counter != ready_counter || player_counter < 2);
+    // TODO: send "starting_game_communicate" to all players
 
     isGameStarted = TRUE;
     fprintf(stderr, "Starting game\n");
@@ -98,16 +98,13 @@ void* connection_handler(void* socket_desc) {
     // Waiting for other players to join
     while (!isGameStarted)
     {
-        /* TODO: send number of players if players are not ready
-         * or "starting_game" communicate if players are ready
-         * and number of players is bigger than 1*/
+        // TODO: send number of players if players are not ready
     }
 
     // Waiting for game to end
     while (isGameStarted)
     {
-        /* In this loop we will be receiving and checking
-         * if shoot is accurate */
+        // TODO: In this loop we will be receiving and checking of shoot is accurate
     }
 
     // TODO: send communicate "game_ended" to client and scores
