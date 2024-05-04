@@ -1,158 +1,274 @@
-#include <sys/socket.h>
-#include <netinet/in.h>
-//#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <time.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+
 #include "struct/list.h"
 #include "struct/structs.h"
 #include "struct/message.h"
 
-#define GAME_TIME 180 // in seconds
-#define BUFFER 2000
-#define TRUE 1
-#define FALSE 0
+#define PORT 5000
+#define MAX_CONNECTIONS 10
+#define BUFFER_SIZE 2000
+#define GAME_TIME 40 // in seconds
 
-// global variables
+// Global variables
 unsigned int id_counter = 1;
 unsigned int player_counter = 0;
 unsigned int ready_counter = 0;
-int isGameStarted = FALSE;
+bool isGameStarted = false;
+time_t gameStartTime;
+time_t gameEndTime;
 
-// Mutex is used to synchronise threads and
-// secure shared resources
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// main resources
 List* players = NULL;
 List* targets = NULL;
 List* threads = NULL;
 List* socks = NULL;
 
-/* game() is running on other threads
-  than main and connection handlers */
-void* game()
-{
-    // wait for players
-    while (player_counter != ready_counter || player_counter < 2);
-    // TODO: send "starting_game_communicate" to all players
+// Function prototypes
+void freeTargets(List* list);
+void print_target(void* data);
+Player* findById(List* list, int id);
+void* game(void* arg);
+void* connection_handler(void* socket_desc);
 
-    isGameStarted = TRUE;
-    fprintf(stderr, "Starting game\n");
-    // game loop
-    //while (TRUE)
-    {
-        // TODO: End loop after GAME_TIME
-        /* In this loop we will be sending generated
-         * targets etc. using socks list */
-        sleep(4);
+int main() {
+    int listenfd, connfd = 0;
+    struct sockaddr_in serv_addr;
+    pthread_t game_thread_id, thread_id;
+
+    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenfd < 0) {
+        perror("Error creating socket");
+        exit(EXIT_FAILURE);
     }
-    isGameStarted = FALSE;
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(PORT);
+
+    if (bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("Error binding socket");
+        exit(EXIT_FAILURE);
+    }
+
+    listen(listenfd, MAX_CONNECTIONS);
+
+    pthread_create(&game_thread_id, NULL, game, NULL);
+
+    while (true) {
+        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
+        if (connfd < 0) {
+            perror("Error accepting connection");
+            continue;
+        }
+        printf("Connection accepted\n");
+        pthread_create(&thread_id, NULL, connection_handler, (void*)&connfd);
+        threads = insertAtEnd(threads, NULL, thread_id);
+    }
+
+    return 0;
+}
+
+void* game(void* arg) {
+    while (player_counter != ready_counter || player_counter < 1);
+
+    pthread_mutex_lock(&mutex);
+    isGameStarted = true;
+    fprintf(stderr, "Starting game\n");
+
+    gameStartTime = time(NULL);
+    gameEndTime = gameStartTime + GAME_TIME;
+
+    // Broadcast starting message to all players
+    List* current = socks;
+    while (current != NULL) {
+        int sock = *((int*)current->data);
+        sendMessage(sock, "starting_game");
+        current = current->next;
+    }
+
+    pthread_mutex_unlock(&mutex);
+
+    while (time(NULL) < gameEndTime) {
+        // Random target generation - seems to be predetermined though
+        Target* target = (Target*)malloc(sizeof(Target));
+        target->id = rand() % 100;
+        target->position_x = rand() % 100;
+        target->position_y = rand() % 100;
+        target->type = rand() % 3;
+        target->isAlive = true;
+
+        pthread_mutex_lock(&mutex);
+        targets = insertAtEnd(targets, target, target->id);
+        pthread_mutex_unlock(&mutex);
+
+        fprintf(stderr, "Targets List:\n");
+        display(targets, print_target);
+
+        current = socks;
+        while (current != NULL) {
+            int sock = *((int*)current->data);
+            sendMessage(sock, "target");
+            sendTarget(sock, target);
+            current = current->next;
+        }
+        // Interval between new targets
+        usleep(5000000);
+    }
+
+    freeTargets(targets);  // Free memory for all targets
+    targets = NULL;        // Reset the targets list
+
+    isGameStarted = false;
     fprintf(stderr, "Game ended\n");
 
     pthread_exit(NULL);
 }
 
 void* connection_handler(void* socket_desc) {
-	/* Get the socket descriptor */
-	int sock = *(int*)socket_desc;
+    int sock = *(int*)socket_desc;
     Message* message;
 
-    int thread_id = id_counter++;   // different from in threads
-    insertAtEnd(socks, &sock, thread_id);
+    pthread_mutex_lock(&mutex);
+    int thread_id = id_counter++;
+    pthread_mutex_unlock(&mutex);
 
-	/* Create new player */
-	Player* player = (Player*)malloc(sizeof(Player));
-	player->id = thread_id;
-	player->score = 0;
-    player->isInGame = FALSE;
+    int* sockPtr = malloc(sizeof(int));
+    if (sockPtr == NULL) {
+        perror("Error allocating memory");
+        close(sock);
+        pthread_exit(NULL);
+    }
+    *sockPtr = sock;
+
+    pthread_mutex_lock(&mutex);
+    socks = insertAtEnd(socks, sockPtr, thread_id);
+    pthread_mutex_unlock(&mutex);
+
+    Player* player = (Player*)malloc(sizeof(Player));
+    if (player == NULL) {
+        perror("Error allocating memory");
+        close(sock);
+        free(sockPtr);
+        pthread_exit(NULL);
+    }
+    player->id = thread_id;
+    player->score = 0;
+    player->isInGame = false;
 
     pthread_mutex_lock(&mutex);
     players = insertAtEnd(players, player, player->id);
-	fprintf(stderr, "Player %d joined.\n", player->id);
+    fprintf(stderr, "Player %d joined.\n", player->id);
     player_counter++;
     display(players, print_player);
     pthread_mutex_unlock(&mutex);
 
-	/* Send client_id to client */
     sendMessage(sock, itos(player->id));
 
-    /* Wait for "ready" status */
     message = receiveMessage(sock);
+    if (message == NULL) {
+        perror("Error receiving message");
+        close(sock);
+        pthread_exit(NULL);
+    }
 
-    if (strcmp(message->content, "ready") == 0)
-    {
-        ready_counter += 1;
-        player->isInGame = TRUE;
+    if (strcmp(message->content, "ready") == 0) {
+        ready_counter++;
+        player->isInGame = true;
         fprintf(stderr, "Player %d ready.\n", player->id);
-    } else
-    {
+    }
+    else {
         fprintf(stderr, "Communication error.\n");
         free(message);
-        exit(0);
+        close(sock);
+        pthread_exit(NULL);
     }
     free(message);
 
-    // Waiting for other players to join
-    while (!isGameStarted)
-    {
-        // TODO: send number of players if players are not ready
+    while (!isGameStarted) {
+        // Wait for game to start
     }
 
-    // Waiting for game to end
-    while (isGameStarted)
-    {
-        // TODO: In this loop we will be receiving and checking of shoot is accurate
+    while (isGameStarted) {
+        Shot* shot = receiveShot(sock);
+        if (shot != NULL) {
+            pthread_mutex_lock(&mutex);
+            List* current_target = targets;
+            pthread_mutex_unlock(&mutex);
+
+            while (current_target != NULL) {
+                Target* target = (Target*)current_target->data;
+
+                if (shot->x == target->position_x && shot->y == target->position_y && target->isAlive) {
+                    target->isAlive = false;
+
+                    pthread_mutex_lock(&mutex);
+                    List* current_sock = socks;
+                    while (current_sock != NULL) {
+                        int sock = *((int*)current_sock->data);
+                        sendMessage(sock, "destroy");
+                        sendTarget(sock, target);
+                        current_sock = current_sock->next;
+                    }
+                    pthread_mutex_unlock(&mutex);
+                    break;
+                }
+                current_target = current_target->next;
+            }
+        }
+        free(shot);
     }
 
-    // TODO: send communicate "game_ended" to client and scores
+    sendMessage(sock, "end_game");
 
-    // Disconnect player
     pthread_mutex_lock(&mutex);
-	fprintf(stderr, "Client disconnected\n");
+    fprintf(stderr, "Client disconnected\n");
     deleteById(&players, player->id);
     deleteById(&socks, sock);
     player_counter--;
     ready_counter--;
-
-    // Delete thread from threads
     deleteById(&threads, (int)pthread_self());
     pthread_mutex_unlock(&mutex);
 
-	close(sock);
-	pthread_exit(NULL);
+    close(sock);
+    pthread_exit(NULL);
 }
 
-int main() {
-	int listenfd, connfd = 0;
-	struct sockaddr_in serv_addr;
-	pthread_t thread_id;
+void freeTargets(List* list) {
+    List* current = list;
+    while (current != NULL) {
+        Target* target = (Target*)current->data;
+        free(target);
+        current = current->next;
+    }
+    freeList(list);
+}
 
-    // create socket
-	listenfd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&serv_addr, '0', sizeof(serv_addr));
+void print_target(void* data) {
+    Target* target = (Target*)data;
+    printf("Target ID: %d, Position: (%d, %d), Type: %d, Alive: %d\n",
+        target->id, target->position_x, target->position_y, target->type, target->isAlive);
+}
 
-    // configure connection
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_addr.sin_port = htons(5000);
-
-    // create game thread
-    pthread_t game_thread_id;
-    pthread_create(&game_thread_id, NULL, game, NULL);
-
-	bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-
-	listen(listenfd, 10);
-
-	for (;;) {
-		connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
-		fprintf(stderr, "Connection accepted\n");
-		pthread_create(&thread_id, NULL, connection_handler, (void*)&connfd);
-        // save thread
-        threads = insertAtEnd(threads, NULL, thread_id);
-        // to access thread_id we call getIdByIndex
-	}
+Player* findById(List* list, int id) {
+    List* current = list;
+    while (current != NULL) {
+        Player* player = (Player*)current->data;
+        if (player->id == id) {
+            return player;
+        }
+        current = current->next;
+    }
+    return NULL;
 }
