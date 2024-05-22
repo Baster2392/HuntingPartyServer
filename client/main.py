@@ -5,13 +5,15 @@ import time
 import pygame
 import sys
 import ctypes
-
 ctypes.windll.user32.SetProcessDPIAware()
+
+
+Rozmiar_balona_x = 214
+Rozmiar_balona_y = 244
+
 
 BUFFER_SIZE = 260
 targets = []
-
-
 class Message:
     def __init__(self, content):
         self.content = content
@@ -110,9 +112,20 @@ def main():
         client_socket.send(packed_message)
         print("Message sent")
 
-        # input_thread = threading.Thread(target=handle_user_input, args=(client_socket,))
-        # input_thread.daemon = True
-        # input_thread.start()
+
+
+
+        #input_thread = threading.Thread(target=handle_user_input, args=(client_socket,))
+        #input_thread.daemon = True
+        #input_thread.start()
+
+
+
+
+
+
+
+
 
         ############################################
         pygame.init()
@@ -124,15 +137,15 @@ def main():
         WHITE = (255, 255, 255)
 
         # Inicjalizacja ekranu
-        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT),
-                                         pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
         pygame.display.set_caption("Przesuwająca się mapa")
-        map_image = pygame.transform.scale(pygame.image.load("mapa.jpg"),
-                                           (int(SCREEN_HEIGHT * MAP_WIDTH / MAP_HEIGHT), SCREEN_HEIGHT))
+        map_image = pygame.transform.scale(pygame.image.load("mapa.png"), (int(SCREEN_HEIGHT * MAP_WIDTH / MAP_HEIGHT), SCREEN_HEIGHT))
         MAP_WIDTH = map_image.get_width()  # aktualizacja szerokości mapy po skalowaniu
         # Wczytanie obrazka celownika
         crosshair_image = pygame.image.load("celownik.png").convert_alpha()
         target_image = pygame.image.load("cel.png").convert_alpha()
+
+
 
         # Pozycja mapy
         map_x = 0
@@ -148,6 +161,8 @@ def main():
         running = True
 
         ########################################################
+
+
 
         input_thread = threading.Thread(target=handle_user_input111, args=(client_socket,))
         input_thread.daemon = True
@@ -187,9 +202,10 @@ def main():
                 if target["position_y"] > MAP_HEIGHT:
                     target["position_y"] -= MAP_HEIGHT
 
-                # zmiana znaku wektora pionowego po uderzeniu w górną lub dolną krawędź
-                # if target["position_y"] > MAP_HEIGHT - 256 or target["position_y"] < 0:
+                #zmiana znaku wektora pionowego po uderzeniu w górną lub dolną krawędź
+                #if target["position_y"] > MAP_HEIGHT - Rozmiar_balona_y or target["position_y"] < 0:
                 #    target["movement_vector"][1] = -target["movement_vector"][1]
+
 
             # Rysowanie
             screen.fill(WHITE)
@@ -202,8 +218,8 @@ def main():
 
             for target in targets:
                 x = target["position_x"] + map_x
-                while (x > 5000 - 199): x -= 5000
-                while (x < -199): x += 5000
+                while (x > MAP_WIDTH - Rozmiar_balona_x): x -= MAP_WIDTH
+                while (x < -Rozmiar_balona_x): x += MAP_WIDTH
                 screen.blit(target_image, (x, target["position_y"]))
 
             # Rysowanie celownika na pozycji kursora
@@ -250,4 +266,3 @@ def receive_message(client_socket):
 
 if __name__ == "__main__":
     main()
-
