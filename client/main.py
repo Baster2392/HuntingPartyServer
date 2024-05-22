@@ -2,8 +2,14 @@ import socket
 import struct
 import threading
 import time
+import pygame
+import sys
+import ctypes
+
+ctypes.windll.user32.SetProcessDPIAware()
 
 BUFFER_SIZE = 260
+targets = []
 
 
 class Message:
@@ -30,17 +36,40 @@ def send_shot(client_socket, shot):
     client_socket.send(packed_shot)
 
 
-def handle_user_input(client_socket):
+def handle_user_input111(client_socket):
+    global targets
+    last_print_time = time.time()  # Initialize last_print_time here
     while True:
-        try:
-            x = int(input("Enter x coordinate for shot: "))
-            y = int(input("Enter y coordinate for shot: "))
-        except ValueError:
-            print("Invalid input. Please enter integers for coordinates.")
+        #### FRAGMENT 2
+        server_response = receive_message(client_socket)
+
+        if server_response is None:
             continue
 
-        shot = Shot(x, y)
-        send_shot(client_socket, shot)
+        print(server_response)
+        if server_response == "starting_game":
+            print("Game is starting")
+        elif server_response == "end_game":
+            print("Game ended. Exiting...")
+            break
+        elif server_response == "target":
+            target = receive_target(client_socket)
+            targets.append(target)
+        elif server_response == "destroy":
+            target = receive_target(client_socket)
+            received_id_t = target['id']
+            print("Destroyed target ID:", received_id_t)
+            targets = [t for t in targets if t['id'] != received_id_t]
+        else:
+            time.sleep(1)
+
+        current_time = time.time()
+        if current_time - last_print_time >= 10:
+            if len(targets) > 0:
+                print("List of targets:")
+                for target in targets:
+                    print(f"ID: {target['id']}, X: {target['position_x']}, Y: {target['position_y']}")
+            last_print_time = current_time
 
 
 def receive_target(client_socket):
@@ -81,48 +110,127 @@ def main():
         client_socket.send(packed_message)
         print("Message sent")
 
-        targets = []
-        last_print_time = time.time()  # Initialize last_print_time here
+        # input_thread = threading.Thread(target=handle_user_input, args=(client_socket,))
+        # input_thread.daemon = True
+        # input_thread.start()
 
-        input_thread = threading.Thread(target=handle_user_input, args=(client_socket,))
+        ############################################
+        pygame.init()
+        info = pygame.display.Info()
+        SCREEN_WIDTH = info.current_w
+        SCREEN_HEIGHT = info.current_h
+        MAP_WIDTH = 5000
+        MAP_HEIGHT = 1080
+        WHITE = (255, 255, 255)
+
+        # Inicjalizacja ekranu
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT),
+                                         pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        pygame.display.set_caption("Przesuwająca się mapa")
+        map_image = pygame.transform.scale(pygame.image.load("mapa.jpg"),
+                                           (int(SCREEN_HEIGHT * MAP_WIDTH / MAP_HEIGHT), SCREEN_HEIGHT))
+        MAP_WIDTH = map_image.get_width()  # aktualizacja szerokości mapy po skalowaniu
+        # Wczytanie obrazka celownika
+        crosshair_image = pygame.image.load("celownik.png").convert_alpha()
+        target_image = pygame.image.load("cel.png").convert_alpha()
+
+        # Pozycja mapy
+        map_x = 0
+        map_y = 0
+
+        # Prędkość przesuwania mapy
+        scroll_speed = 50  # prędkość przewijania
+
+        # Ukrycie systemowego kursora myszy
+        pygame.mouse.set_visible(False)
+
+        # Główna pętla gry
+        running = True
+
+        ########################################################
+
+        input_thread = threading.Thread(target=handle_user_input111, args=(client_socket,))
         input_thread.daemon = True
         input_thread.start()
 
         while True:
-            server_response = receive_message(client_socket)
+            #### FRAGMENT 1
+            #######################################################
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False  # dodane wyjście przez ESC
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # Lewy przycisk myszy
+                        mouse_x, mouse_y = event.pos
+                        map_cursor_x = (mouse_x - map_x) % MAP_WIDTH
+                        map_cursor_y = mouse_y  # Y pozostaje bez zmian, jeśli mapa nie przewija się pionowo
+                        shot = Shot(map_cursor_x, map_cursor_y)
+                        send_shot(client_socket, shot)
+                        print(f"Oddano strzał – Współrzędne kursora względem mapy: {map_cursor_x}, {map_cursor_y}")
 
-            if server_response is None:
-                continue
+            # Płynne przesuwanie mapy
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                map_x = (map_x + scroll_speed) % MAP_WIDTH
+            if keys[pygame.K_RIGHT]:
+                map_x = (map_x - scroll_speed) % MAP_WIDTH
 
-            print(server_response)
-            if server_response == "starting_game":
-                print("Game is starting")
-            elif server_response == "end_game":
-                print("Game ended. Exiting...")
-                break
-            elif server_response == "target":
-                target = receive_target(client_socket)
-                targets.append(target)
-            elif server_response == "destroy":
-                target = receive_target(client_socket)
-                received_id_t = target['id']
-                print("Destroyed target ID:", received_id_t)
-                targets = [t for t in targets if t['id'] != received_id_t]
-            else:
-                time.sleep(1)
+            for target in targets:
+                target["position_x"]
+                target["position_y"]
+                # Jeśli cel wyjdzie poza mapę, przenieś go na przeciwną stronę
+                if target["position_x"] > MAP_WIDTH:
+                    target["position_x"] -= MAP_WIDTH
+                if target["position_y"] > MAP_HEIGHT:
+                    target["position_y"] -= MAP_HEIGHT
 
-            current_time = time.time()
-            if current_time - last_print_time >= 10:
-                if len(targets) > 0:
-                    print("List of targets:")
-                    for target in targets:
-                        print(f"ID: {target['id']}, X: {target['position_x']}, Y: {target['position_y']}")
-                last_print_time = current_time
+                # zmiana znaku wektora pionowego po uderzeniu w górną lub dolną krawędź
+                # if target["position_y"] > MAP_HEIGHT - 256 or target["position_y"] < 0:
+                #    target["movement_vector"][1] = -target["movement_vector"][1]
+
+            # Rysowanie
+            screen.fill(WHITE)
+            screen.blit(map_image, (map_x, map_y))
+            # Obsługa zapętlenia mapy
+            if map_x > 0:
+                screen.blit(map_image, (map_x - MAP_WIDTH, map_y))
+            elif map_x < SCREEN_WIDTH - MAP_WIDTH:
+                screen.blit(map_image, (map_x + MAP_WIDTH, map_y))
+
+            for target in targets:
+                x = target["position_x"] + map_x
+                while (x > 5000 - 199): x -= 5000
+                while (x < -199): x += 5000
+                screen.blit(target_image, (x, target["position_y"]))
+
+            # Rysowanie celownika na pozycji kursora
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            screen.blit(crosshair_image,
+                        (mouse_x - crosshair_image.get_width() / 2, mouse_y - crosshair_image.get_height() / 2))
+
+            # Aktualizacja ekranu
+            pygame.display.flip()
+
+            #################################################
+
+
+
+
+
+
+
+
+
 
     except ConnectionRefusedError:
         print("Unable to connect to the server.")
     finally:
         client_socket.close()
+        pygame.quit()
+        sys.exit()
 
 
 def receive_message(client_socket):
@@ -142,3 +250,4 @@ def receive_message(client_socket):
 
 if __name__ == "__main__":
     main()
+

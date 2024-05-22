@@ -2,11 +2,7 @@ class Shot:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.control_sum = calculate_control_sum(self)
+        self.control_sum = self.calculate_control_sum()
 
-def calculate_control_sum(self):
-    csum = 0
-    csum = self.x
-    csum += self.y
-
-    return csum % 256
+    def calculate_control_sum(self):
+        return sum([self.x, self.y]) % 256

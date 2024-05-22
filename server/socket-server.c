@@ -73,7 +73,9 @@ int main() {
             continue;
         }
         printf("Connection accepted\n");
-        pthread_create(&thread_id, NULL, connection_handler, (void*)&connfd);
+        int *new_sock = malloc(sizeof(int));
+        *new_sock = connfd;
+        pthread_create(&thread_id, NULL, connection_handler, (void*)new_sock);
         threads = insertAtEnd(threads, NULL, thread_id);
     }
 
@@ -101,11 +103,11 @@ void* game(void* arg) {
     pthread_mutex_unlock(&mutex);
 
     while (time(NULL) < gameEndTime) {
-        // Random target generation - seems to be predetermined though
+        // Random target generation
         Target* target = (Target*)malloc(sizeof(Target));
         target->id = rand() % 100;
-        target->position_x = rand() % 100;
-        target->position_y = rand() % 100;
+        target->position_x = rand() % 5000;
+        target->position_y = rand() % 824;
         target->type = rand() % 3;
         target->isAlive = true;
 
@@ -138,6 +140,7 @@ void* game(void* arg) {
 
 void* connection_handler(void* socket_desc) {
     int sock = *(int*)socket_desc;
+    free(socket_desc);
     Message* message;
 
     pthread_mutex_lock(&mutex);
