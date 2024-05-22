@@ -107,7 +107,7 @@ void* game(void* arg) {
         Target* target = (Target*)malloc(sizeof(Target));
         target->id = rand() % 100;
         target->position_x = rand() % 5000;
-        target->position_y = rand() % 824;
+        target->position_y = rand() % 836;
         target->type = rand() % 3;
         target->isAlive = true;
 
