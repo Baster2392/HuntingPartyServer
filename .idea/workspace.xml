@@ -18,13 +18,16 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5353a0fb-2eaf-4c10-8099-b95a945c0b6b" name="Changes" comment="Fixed Message functions">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/pythonProject.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/pythonProject.iml" afterDir="false" />
+    <list default="true" id="5353a0fb-2eaf-4c10-8099-b95a945c0b6b" name="Changes" comment="kod konrada">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cel.png" beforeDir="false" afterPath="$PROJECT_DIR$/cel.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/celownik.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/cel.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/celownik.png" beforeDir="false" afterPath="$PROJECT_DIR$/celownik.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/message.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/message.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/shot.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/shot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/mapa.png" beforeDir="false" afterPath="$PROJECT_DIR$/mapa.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mapa.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/server/socket-server.c" beforeDir="false" afterPath="$PROJECT_DIR$/server/socket-server.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -64,6 +67,7 @@
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="SET_USER_NAME_GLOBALLY" value="false" />
     <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -112,7 +116,7 @@
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;//wsl.localhost/Ubuntu/home/baster/.virtualenvs/HuntParty&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Admin/PycharmProjects/HuntParty&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -124,12 +128,15 @@
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Admin\PycharmProjects\HuntParty" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Admin\PycharmProjects\HuntParty\server" />
       <recent name="C:\Users\Admin\PycharmProjects\HuntParty" />
       <recent name="C:\Users\Admin\PycharmProjects\HuntParty\client" />
       <recent name="\\wsl.localhost\Ubuntu\home\baster\Studia\pr\HuntParty" />
       <recent name="\\wsl.localhost\Ubuntu\home\baster\Studia\pr\HuntParty\server" />
-      <recent name="\\wsl.localhost\Ubuntu\home\baster\Studia\pr\HuntParty\server\struct" />
     </key>
   </component>
   <component name="RunManager" selected="Python.main">
@@ -291,7 +298,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/client/main.py" />
+      <option name="SCRIPT_NAME" value="C:\Users\Admin\PycharmProjects\HuntParty\client\main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -532,7 +539,8 @@
       <workItem from="1715566891199" duration="1988000" />
       <workItem from="1715607296818" duration="49000" />
       <workItem from="1716068722037" duration="7400000" />
-      <workItem from="1716367775960" duration="1841000" />
+      <workItem from="1716367775960" duration="18354000" />
+      <workItem from="1716452500742" duration="28222000" />
     </task>
     <task id="LOCAL-00001" summary="Init commit">
       <option name="closed" value="true" />
@@ -598,7 +606,23 @@
       <option name="project" value="LOCAL" />
       <updated>1712417404858</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="kod konrada">
+      <option name="closed" value="true" />
+      <created>1716370020016</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1716370020016</updated>
+    </task>
+    <task id="LOCAL-00010" summary="kod konrada">
+      <option name="closed" value="true" />
+      <created>1716370045035</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1716370045035</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -610,6 +634,21 @@
     <isAutomaticReloadCMake value="true" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="Branch">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="master" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
@@ -620,7 +659,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="origin/server" />
+                        <option value="master" />
                       </list>
                     </value>
                   </entry>
@@ -642,14 +681,26 @@
     <MESSAGE value="Completed first stage of client handling" />
     <MESSAGE value="Added structs.h" />
     <MESSAGE value="Fixed Message functions" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed Message functions" />
+    <MESSAGE value="kod konrada" />
+    <option name="LAST_COMMIT_MESSAGE" value="kod konrada" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/client/main.py</url>
+          <line>11</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
     <select />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/HuntParty$client_main.coverage" NAME="client.main Coverage Results" MODIFIED="1716071339705" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/HuntParty$main.coverage" NAME="main Coverage Results" MODIFIED="1716369634659" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/HuntParty$client_main.coverage" NAME="client.main Coverage Results" MODIFIED="1716585441948" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/HuntParty$main.coverage" NAME="main Coverage Results" MODIFIED="1716585447138" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

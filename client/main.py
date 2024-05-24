@@ -1,3 +1,4 @@
+import math
 import socket
 import struct
 import threading
@@ -7,10 +8,10 @@ import sys
 import ctypes
 ctypes.windll.user32.SetProcessDPIAware()
 
-
 Rozmiar_balona_x = 214
 Rozmiar_balona_y = 244
-
+gameStartTime = 0
+game_started = False  # Nowa zmienna do śledzenia stanu gry
 
 BUFFER_SIZE = 260
 targets = []
@@ -39,10 +40,9 @@ def send_shot(client_socket, shot):
 
 
 def handle_user_input111(client_socket):
-    global targets
+    global targets, gameStartTime, game_started
     last_print_time = time.time()  # Initialize last_print_time here
     while True:
-        #### FRAGMENT 2
         server_response = receive_message(client_socket)
 
         if server_response is None:
@@ -50,6 +50,8 @@ def handle_user_input111(client_socket):
 
         print(server_response)
         if server_response == "starting_game":
+            gameStartTime = time.time()
+            game_started = True  # Zmień stan gry na rozpoczęty
             print("Game is starting")
         elif server_response == "end_game":
             print("Game ended. Exiting...")
@@ -66,7 +68,7 @@ def handle_user_input111(client_socket):
             time.sleep(1)
 
         current_time = time.time()
-        if current_time - last_print_time >= 10:
+        if current_time - last_print_time >= 1:
             if len(targets) > 0:
                 print("List of targets:")
                 for target in targets:
@@ -95,6 +97,8 @@ def receive_target(client_socket):
 
 
 def main():
+    global game_started  # Zmienna globalna do śledzenia stanu gry
+
     server_address = '127.0.0.1'
     server_port = 5000
 
@@ -112,134 +116,92 @@ def main():
         client_socket.send(packed_message)
         print("Message sent")
 
-
-
-
-        #input_thread = threading.Thread(target=handle_user_input, args=(client_socket,))
-        #input_thread.daemon = True
-        #input_thread.start()
-
-
-
-
-
-
-
-
-
-        ############################################
         pygame.init()
         info = pygame.display.Info()
         SCREEN_WIDTH = info.current_w
         SCREEN_HEIGHT = info.current_h
-        MAP_WIDTH = 5000
+
+        print(SCREEN_WIDTH, SCREEN_HEIGHT)
+        MAP_WIDTH = 4 * SCREEN_WIDTH
         MAP_HEIGHT = 1080
         WHITE = (255, 255, 255)
+        BLACK = (0, 0, 0)
 
-        # Inicjalizacja ekranu
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
         pygame.display.set_caption("Przesuwająca się mapa")
+
+        font = pygame.font.Font(None, 74)  # Ustawienia czcionki
+
         map_image = pygame.transform.scale(pygame.image.load("mapa.png"), (int(SCREEN_HEIGHT * MAP_WIDTH / MAP_HEIGHT), SCREEN_HEIGHT))
-        MAP_WIDTH = map_image.get_width()  # aktualizacja szerokości mapy po skalowaniu
-        # Wczytanie obrazka celownika
         crosshair_image = pygame.image.load("celownik.png").convert_alpha()
         target_image = pygame.image.load("cel.png").convert_alpha()
 
-
-
-        # Pozycja mapy
         map_x = 0
         map_y = 0
+        scroll_speed = 50
 
-        # Prędkość przesuwania mapy
-        scroll_speed = 50  # prędkość przewijania
-
-        # Ukrycie systemowego kursora myszy
         pygame.mouse.set_visible(False)
-
-        # Główna pętla gry
-        running = True
-
-        ########################################################
-
-
 
         input_thread = threading.Thread(target=handle_user_input111, args=(client_socket,))
         input_thread.daemon = True
         input_thread.start()
 
         while True:
-            #### FRAGMENT 1
-            #######################################################
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        running = False  # dodane wyjście przez ESC
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:  # Lewy przycisk myszy
+                        running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and game_started:
+                    if event.button == 1:
                         mouse_x, mouse_y = event.pos
                         map_cursor_x = (mouse_x - map_x) % MAP_WIDTH
-                        map_cursor_y = mouse_y  # Y pozostaje bez zmian, jeśli mapa nie przewija się pionowo
+                        map_cursor_y = mouse_y
                         shot = Shot(map_cursor_x, map_cursor_y)
                         send_shot(client_socket, shot)
                         print(f"Oddano strzał – Współrzędne kursora względem mapy: {map_cursor_x}, {map_cursor_y}")
 
-            # Płynne przesuwanie mapy
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LEFT]:
-                map_x = (map_x + scroll_speed) % MAP_WIDTH
-            if keys[pygame.K_RIGHT]:
-                map_x = (map_x - scroll_speed) % MAP_WIDTH
+            if game_started:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_LEFT]:
+                    map_x = (map_x + scroll_speed) % MAP_WIDTH
+                if keys[pygame.K_RIGHT]:
+                    map_x = (map_x - scroll_speed) % MAP_WIDTH
 
-            for target in targets:
-                target["position_x"]
-                target["position_y"]
-                # Jeśli cel wyjdzie poza mapę, przenieś go na przeciwną stronę
-                if target["position_x"] > MAP_WIDTH:
-                    target["position_x"] -= MAP_WIDTH
-                if target["position_y"] > MAP_HEIGHT:
-                    target["position_y"] -= MAP_HEIGHT
+                for target in targets:
+                    current_time = time.time() - gameStartTime
+                    target["position_y"] = SCREEN_HEIGHT / 2 + 100 * math.cos(current_time + target['id'])
+                    target["position_x"] = (100 * current_time + target['id'] * 50) % MAP_WIDTH
 
-                #zmiana znaku wektora pionowego po uderzeniu w górną lub dolną krawędź
-                #if target["position_y"] > MAP_HEIGHT - Rozmiar_balona_y or target["position_y"] < 0:
-                #    target["movement_vector"][1] = -target["movement_vector"][1]
+                    if target["position_x"] > MAP_WIDTH:
+                        target["position_x"] -= MAP_WIDTH
+                    if target["position_y"] > MAP_HEIGHT:
+                        target["position_y"] -= MAP_HEIGHT
 
+                screen.fill(WHITE)
+                screen.blit(map_image, (map_x, map_y))
+                if map_x > 0:
+                    screen.blit(map_image, (map_x - MAP_WIDTH, map_y))
+                elif map_x < SCREEN_WIDTH - MAP_WIDTH:
+                    screen.blit(map_image, (map_x + MAP_WIDTH, map_y))
 
-            # Rysowanie
-            screen.fill(WHITE)
-            screen.blit(map_image, (map_x, map_y))
-            # Obsługa zapętlenia mapy
-            if map_x > 0:
-                screen.blit(map_image, (map_x - MAP_WIDTH, map_y))
-            elif map_x < SCREEN_WIDTH - MAP_WIDTH:
-                screen.blit(map_image, (map_x + MAP_WIDTH, map_y))
+                for target in targets:
+                    x = target["position_x"] + map_x
+                    while x > MAP_WIDTH - Rozmiar_balona_x: x -= MAP_WIDTH
+                    while x < -Rozmiar_balona_x: x += MAP_WIDTH
+                    screen.blit(target_image, (x, target["position_y"]))
 
-            for target in targets:
-                x = target["position_x"] + map_x
-                while (x > MAP_WIDTH - Rozmiar_balona_x): x -= MAP_WIDTH
-                while (x < -Rozmiar_balona_x): x += MAP_WIDTH
-                screen.blit(target_image, (x, target["position_y"]))
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                screen.blit(crosshair_image, (mouse_x - crosshair_image.get_width() / 2, mouse_y - crosshair_image.get_height() / 2))
 
-            # Rysowanie celownika na pozycji kursora
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            screen.blit(crosshair_image,
-                        (mouse_x - crosshair_image.get_width() / 2, mouse_y - crosshair_image.get_height() / 2))
+            else:
+                screen.fill(BLACK)
+                text = font.render("Oczekiwanie na wszystkich graczy...", True, WHITE)
+                text_rect = text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+                screen.blit(text, text_rect)
 
-            # Aktualizacja ekranu
             pygame.display.flip()
-
-            #################################################
-
-
-
-
-
-
-
-
-
 
     except ConnectionRefusedError:
         print("Unable to connect to the server.")
