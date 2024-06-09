@@ -11,7 +11,7 @@ ctypes.windll.user32.SetProcessDPIAware()
 Rozmiar_balona_x = 214
 Rozmiar_balona_y = 244
 gameStartTime = 0
-game_started = False  # Nowa zmienna do śledzenia stanu gry
+game_started = False
 
 BUFFER_SIZE = 260
 targets = []
@@ -40,8 +40,9 @@ def send_shot(client_socket, shot):
 
 
 def handle_user_input111(client_socket):
-    global targets, gameStartTime, game_started
-    last_print_time = time.time()  # Initialize last_print_time here
+    global targets, gameStartTime, game_started, leaderboard
+    leaderboard = []
+    last_print_time = time.time()
     while True:
         server_response = receive_message(client_socket)
 
@@ -51,7 +52,8 @@ def handle_user_input111(client_socket):
         print(server_response)
         if server_response == "starting_game":
             gameStartTime = time.time()
-            game_started = True  # Zmień stan gry na rozpoczęty
+            game_started = True
+            print("Start time:" + str(gameStartTime))
             print("Game is starting")
         elif server_response == "end_game":
             print("Game ended. Exiting...")
@@ -64,6 +66,8 @@ def handle_user_input111(client_socket):
             received_id_t = target['id']
             print("Destroyed target ID:", received_id_t)
             targets = [t for t in targets if t['id'] != received_id_t]
+        elif server_response == "leaderboard":
+            leaderboard = receive_leaderboard(client_socket)
         else:
             time.sleep(1)
 
@@ -97,9 +101,12 @@ def receive_target(client_socket):
 
 
 def main():
-    global game_started  # Zmienna globalna do śledzenia stanu gry
+    global game_started,game_ended
+
+
 
     server_address = '127.0.0.1'
+    #do podlaczania innych 192.168.56.1
     server_port = 5000
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -121,21 +128,24 @@ def main():
         SCREEN_WIDTH = info.current_w
         SCREEN_HEIGHT = info.current_h
 
-        print(SCREEN_WIDTH, SCREEN_HEIGHT)
         MAP_WIDTH = 4 * SCREEN_WIDTH
         MAP_HEIGHT = 1080
         WHITE = (255, 255, 255)
         BLACK = (0, 0, 0)
-
+        GOLD = (187,165,61)
+        SILVER = (165,169,180)
+        BRONZE = (110,77,37)
+        DEFAULT = (90,77,65)
+        colors = [GOLD, SILVER, BRONZE, DEFAULT]
+        game_ended = False
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
         pygame.display.set_caption("Przesuwająca się mapa")
 
-        font = pygame.font.Font(None, 74)  # Ustawienia czcionki
-
-        map_image = pygame.transform.scale(pygame.image.load("mapa.png"), (int(SCREEN_HEIGHT * MAP_WIDTH / MAP_HEIGHT), SCREEN_HEIGHT))
+        font = pygame.font.Font(None, 74)
+        leaderboard_font = pygame.font.Font(None, 36)
+        map_image = pygame.transform.scale(pygame.image.load("mapa.png"), ( MAP_WIDTH+10, SCREEN_HEIGHT))
         crosshair_image = pygame.image.load("celownik.png").convert_alpha()
         target_image = pygame.image.load("cel.png").convert_alpha()
-
         map_x = 0
         map_y = 0
         scroll_speed = 50
@@ -145,8 +155,8 @@ def main():
         input_thread = threading.Thread(target=handle_user_input111, args=(client_socket,))
         input_thread.daemon = True
         input_thread.start()
-
-        while True:
+        running = True
+        while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -161,8 +171,42 @@ def main():
                         shot = Shot(map_cursor_x, map_cursor_y)
                         send_shot(client_socket, shot)
                         print(f"Oddano strzał – Współrzędne kursora względem mapy: {map_cursor_x}, {map_cursor_y}")
+            if game_started and not game_ended and time.time() - gameStartTime > 60:
+                game_ended = True
+            if game_ended:
+                screen.fill(BLACK)
+                font_large = pygame.font.Font(None, 144)
+                text = font_large.render("Game Over", True, WHITE)
+                text_rect = text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 4))
+                screen.blit(text, text_rect)
 
-            if game_started:
+                entry_surface = leaderboard_font.render("Final Leaderboard: ", True, WHITE)
+                screen.blit(entry_surface, (10, SCREEN_HEIGHT / 2 - 40))
+                try:
+                    part1 = leaderboard[0][:12]
+
+                    entry_surface = leaderboard_font.render(str(part1), True, colors[0])
+                    screen.blit(entry_surface, (10, SCREEN_HEIGHT / 2+40))
+
+                    part2 = leaderboard[0][12:24]
+
+                    entry_surface = leaderboard_font.render(str(part2), True, colors[1])
+                    screen.blit(entry_surface, (10, SCREEN_HEIGHT / 2+40 * 2))
+
+                    part3 = leaderboard[0][24:37]
+
+                    entry_surface = leaderboard_font.render(str(part3), True, colors[2])
+                    screen.blit(entry_surface, (10, SCREEN_HEIGHT / 2+40 * 3))
+
+                    part4 = leaderboard[0][36:49]
+
+                    entry_surface = leaderboard_font.render(str(part4), True, colors[3])
+                    screen.blit(entry_surface, (10, SCREEN_HEIGHT / 2+40 * 4))
+                except Exception as e:
+                    print(f"Error rendering final leaderboard: {e}")
+
+
+            if game_started and not game_ended:
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_LEFT]:
                     map_x = (map_x + scroll_speed) % MAP_WIDTH
@@ -171,15 +215,28 @@ def main():
 
                 for target in targets:
                     current_time = time.time() - gameStartTime
-                    target["position_y"] = SCREEN_HEIGHT / 2 + 100 * math.cos(current_time + target['id'])
-                    target["position_x"] = (100 * current_time + target['id'] * 50) % MAP_WIDTH
+
+                    if target["type"] == 0:
+
+                        target["position_y"] = SCREEN_HEIGHT / 2 + 100 * math.cos(current_time + target['id'])
+                        target["position_x"] = (100 * current_time + target['id'] * 50) % MAP_WIDTH
+
+                    elif target["type"] == 1:
+                        radius = 250
+                        center_x = (100 * current_time + target['id'] * 50) % MAP_WIDTH
+                        center_y = SCREEN_HEIGHT / 2
+                        target["position_x"] = center_x + radius * math.cos(current_time + target['id'])
+                        target["position_y"] = center_y + radius * math.sin(current_time + target['id'])
+                    else:
+                        target["position_y"] = SCREEN_HEIGHT / 2 + 100 * math.cos(current_time + target['id'])
+                        target["position_x"] = (100 * (60-current_time) + target['id'] * 50) % MAP_WIDTH
 
                     if target["position_x"] > MAP_WIDTH:
                         target["position_x"] -= MAP_WIDTH
                     if target["position_y"] > MAP_HEIGHT:
                         target["position_y"] -= MAP_HEIGHT
 
-                screen.fill(WHITE)
+                screen.fill(BLACK)
                 screen.blit(map_image, (map_x, map_y))
                 if map_x > 0:
                     screen.blit(map_image, (map_x - MAP_WIDTH, map_y))
@@ -195,11 +252,42 @@ def main():
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 screen.blit(crosshair_image, (mouse_x - crosshair_image.get_width() / 2, mouse_y - crosshair_image.get_height() / 2))
 
-            else:
-                screen.fill(BLACK)
-                text = font.render("Oczekiwanie na wszystkich graczy...", True, WHITE)
-                text_rect = text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
-                screen.blit(text, text_rect)
+                pygame.draw.rect(screen, BLACK, (0, 0, 300, 200))
+
+                entry_surface = leaderboard_font.render("Player Leaderboard: ", True, WHITE)
+                screen.blit(entry_surface, (10, 0))
+                try:
+                    part1 = leaderboard[0][:12]
+
+                    entry_surface = leaderboard_font.render(str(part1), True, colors[0])
+                    screen.blit(entry_surface, (10, 40))
+
+                    part2 = leaderboard[0][12:24]
+
+                    entry_surface = leaderboard_font.render(str(part2), True, colors[1])
+                    screen.blit(entry_surface, (10, 40 * 2))
+
+                    part3 = leaderboard[0][24:38]
+
+                    entry_surface = leaderboard_font.render(str(part3), True, colors[2])
+                    screen.blit(entry_surface, (10, 40 * 3))
+
+                    part4 = leaderboard[0][36:49]
+
+                    entry_surface = leaderboard_font.render(str(part4), True, colors[3])
+                    screen.blit(entry_surface, (10, 40 * 4))
+                except Exception as e:
+                    print(f"Error rendering leaderboard")
+
+
+
+
+
+            elif not game_ended and not game_started:
+                    screen.fill(BLACK)
+                    text = font.render("Oczekiwanie na wszystkich graczy...", True, WHITE)
+                    text_rect = text.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+                    screen.blit(text, text_rect)
 
             pygame.display.flip()
 
@@ -212,18 +300,55 @@ def main():
 
 
 def receive_message(client_socket):
-    server_response = client_socket.recv(BUFFER_SIZE)
-    if not server_response or len(server_response) != BUFFER_SIZE:
+    try:
+        server_response = client_socket.recv(BUFFER_SIZE)
+        if not server_response or len(server_response) != BUFFER_SIZE:
+            return None
+        content, control_sum = struct.unpack("256si", server_response)
+        if control_sum == 0:
+            control_sum = (sum(ord(char) for char in str(content)) % 256)//2+1
+
+        content = content.decode().rstrip('\x00')
+        i = 0
+        while content[i] not in ('t','l','s','d','e','P','1','2','3'):
+            i+=1
+        content = content[i:]
+        print("content:",content)
+        print(Message(content).control_sum)
+        print(control_sum)
+
+        if Message(content).control_sum != control_sum:
+            print("Data has somehow been corrupted.")
+            return None
+
+        return content
+    except UnicodeDecodeError:
+        print("UnicodeDecodeError occurred. Skipping the corrupted message.")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
         return None
 
-    content, control_sum = struct.unpack("256si", server_response)
-    content = content.decode().rstrip('\x00')
 
-    if Message(content).control_sum != control_sum:
-        print("Data has been corrupted.")
-        return None
+def receive_leaderboard(client_socket):
+    sentence = ""
+    num_entries_data = client_socket.recv(256)
+    print("data:",num_entries_data)
+    i=0
+    while chr(num_entries_data[i]) != 'P' and num_entries_data[i] != '\0':
+        i += 1
+    num_entries_data = num_entries_data[i:]
+    num_entries_data = num_entries_data.decode().rstrip('\x00')
 
-    return content
+    a = 0
+    while a < len(num_entries_data)-1:
+        sentence = sentence + num_entries_data[a]
+        a += 1
+    print("data sentence:", sentence)
+
+    leaderboard = [sentence]
+
+    return leaderboard
 
 
 if __name__ == "__main__":

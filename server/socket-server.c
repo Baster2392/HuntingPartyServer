@@ -17,16 +17,12 @@
 #define PORT 5000
 #define MAX_CONNECTIONS 10
 #define BUFFER_SIZE 2000
-#define GAME_TIME 100 // in seconds
-
+#define GAME_TIME 60
 #define MAP_WIDTH 5464
 #define MAP_HEIGHT 1080
+#define TARGET_WIDTH 214
+#define TARGET_HEIGHT 244
 
-
-#define TARGET_WIDTH 214  // szerokość celu
-#define TARGET_HEIGHT 244 // wysokość celu
-
-// Global variables
 unsigned int id_counter = 1;
 unsigned int player_counter = 0;
 unsigned int ready_counter = 0;
@@ -41,7 +37,6 @@ List* targets = NULL;
 List* threads = NULL;
 List* socks = NULL;
 
-// Function prototypes
 void freeTargets(List* list);
 void print_target(void* data);
 Player* findById(List* list, int id);
@@ -49,7 +44,9 @@ void* game(void* arg);
 void* connection_handler(void* socket_desc);
 List* insertSorted(List* list, void* data, int score);
 void calculateTargetPosition(Target* target, time_t currentTime);
-
+void sendLeaderboard(int sock,List* leaderboard);
+int length(List* list);
+void displayLeaderboard(List* leaderboard);
 
 
 int main() {
@@ -67,6 +64,8 @@ int main() {
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    //serv_addr.sin_addr.s_addr = inet_addr("192.168.56.1");
+
     serv_addr.sin_port = htons(PORT);
 
     if (bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -95,16 +94,22 @@ int main() {
 }
 
 void* game(void* arg) {
-    while (player_counter != ready_counter || player_counter < 1);
-
+    while (true) {
+        pthread_mutex_lock(&mutex);
+        if (player_counter == ready_counter && player_counter > 0) {
+            pthread_mutex_unlock(&mutex);
+            break;
+        }
+        pthread_mutex_unlock(&mutex);
+        usleep(100000);
+    }
     pthread_mutex_lock(&mutex);
     isGameStarted = true;
     fprintf(stderr, "Starting game\n");
-
+    printf("\nReady status: %d of %d\n",ready_counter,player_counter);
     gameStartTime = time(NULL);
     gameEndTime = gameStartTime + GAME_TIME;
 
-    // Broadcast starting message to all players
     List* current = socks;
     while (current != NULL) {
         int sock = *((int*)current->data);
@@ -114,8 +119,7 @@ void* game(void* arg) {
 
     pthread_mutex_unlock(&mutex);
 
-while (time(NULL) < gameEndTime) {
-        // Random target generation
+    while (time(NULL) < gameEndTime) {
         Target* target = (Target*)malloc(sizeof(Target));
         target->id = rand() % 100;
         target->position_x = rand() % 5000;
@@ -137,17 +141,31 @@ while (time(NULL) < gameEndTime) {
             sendTarget(sock, target);
             current = current->next;
         }
-        // Interval between new targets
-        usleep(30000000/player_counter);
 
+        List* leaderboard = NULL;
+        current = players;
+        while (current != NULL) {
+            Player* player = (Player*)current->data;
+            leaderboard = insertSorted(leaderboard, player, player->score);
+            current = current->next;
+        }
 
+        current = socks;
+        displayLeaderboard(leaderboard);
+
+        while (current != NULL) {
+            int sock = *((int*)current->data);
+            sendMessage(sock, "leaderboard");
+            sendLeaderboard(sock, leaderboard);
+            current = current->next;
+        }
+
+        usleep(5000000 / player_counter);
     }
 
-    // Free memory for all targets
     freeTargets(targets);
-    targets = NULL; // Reset the targets list
+    targets = NULL;
 
-    // Calculate leaderboard
     List* leaderboard = NULL;
     current = players;
     while (current != NULL) {
@@ -156,32 +174,22 @@ while (time(NULL) < gameEndTime) {
         current = current->next;
     }
 
-    // Broadcast leaderboard to all players
-  /*  current = socks;
+    current = socks;
     while (current != NULL) {
         int sock = *((int*)current->data);
-        sendMessage(sock, "leaderboard");
-        List* leaderboard_current = leaderboard;
-        while (leaderboard_current != NULL) {
-            Player* player = (Player*)leaderboard_current->data;
-            sendMessage(sock, itos(player->id));
-            sendMessage(sock, itos(player->score));
-            leaderboard_current = leaderboard_current->next;
-        }
+        sendMessage(sock, "final_leaderboard");
+        sendLeaderboard(sock, leaderboard);
         current = current->next;
     }
-*/
-    // Display leaderboard on server
+
     fprintf(stderr, "Leaderboard:\n");
     display(leaderboard, print_player);
 
-    // Determine winner
     if (leaderboard != NULL) {
         Player* winner = (Player*)leaderboard->data;
         fprintf(stderr, "Winner: Player %d with score %d\n", winner->id, winner->score);
     }
 
-    // Free memory for leaderboard
     freeList(leaderboard);
 
     isGameStarted = false;
@@ -189,6 +197,51 @@ while (time(NULL) < gameEndTime) {
 
     pthread_exit(NULL);
 }
+
+int calculate_checksum(const char* data, int length) {
+    int checksum = 0;
+    for (int i = 0; i < length; i++) {
+        checksum += data[i];
+    }
+    return checksum%256;
+}
+
+void sendLeaderboard(int sock, List* leaderboard) {
+    int num_entries = length(leaderboard);
+
+    char leaderboard_message[256];
+    memset(leaderboard_message, 0, sizeof(leaderboard_message));
+
+    List* current = leaderboard;
+    while (current != NULL) {
+        Player* player = (Player*)current->data;
+        char leaderboard_entry[64];
+        snprintf(leaderboard_entry, sizeof(leaderboard_entry), "Player %d: %d\n", player->id, player->score);
+        strcat(leaderboard_message, leaderboard_entry);
+        current = current->next;
+    }
+
+    int message_length = strlen(leaderboard_message) + 1;
+    int checksum = calculate_checksum(leaderboard_message, message_length);
+
+
+    char buffer[260];
+    memset(buffer, 0, sizeof(buffer));
+    memcpy(buffer, leaderboard_message, message_length);
+    memcpy(buffer + 256, &checksum, sizeof(int));
+
+    send(sock, buffer, message_length + sizeof(int), 0);
+}
+int length(List* list) {
+    int len = 0;
+    List* current = list;
+    while (current != NULL) {
+        len++;
+        current = current->next;
+    }
+    return len;
+}
+
 
 void* connection_handler(void* socket_desc) {
     int sock = *(int*)socket_desc;
@@ -238,21 +291,22 @@ void* connection_handler(void* socket_desc) {
         pthread_exit(NULL);
     }
 
+    pthread_mutex_lock(&mutex);
     if (strcmp(message->content, "ready") == 0) {
         ready_counter++;
         player->isInGame = true;
         fprintf(stderr, "Player %d ready.\n", player->id);
-    }
-    else {
+    } else {
         fprintf(stderr, "Communication error.\n");
+        pthread_mutex_unlock(&mutex);
         free(message);
         close(sock);
         pthread_exit(NULL);
     }
+    pthread_mutex_unlock(&mutex);
     free(message);
 
     while (!isGameStarted) {
-        // Wait for game to start
     }
 
     while (isGameStarted) {
@@ -267,27 +321,17 @@ void* connection_handler(void* socket_desc) {
                 time_t current_time = time(NULL);
                 pthread_mutex_lock(&mutex);
 
-                calculateTargetPosition(target, current_time); // Update position based on time
-                printf("Target ID: %d, Position: (%d, %d), Type: %d, Alive: %d\n",
+                calculateTargetPosition(target, current_time);
                 target->id, target->position_x, target->position_y, target->type, target->isAlive);
 
                 printf("Shot Position: (%d, %d)\n",
                 shot->x, shot->y);
                 pthread_mutex_unlock(&mutex);
 
-
-
-
-                // Sprawdzenie, czy strzał trafił w obszar celu
-                if (shot->x >= target->position_x-TARGET_WIDTH && shot->x <= target->position_x + TARGET_WIDTH &&
-                    shot->y >= target->position_y-TARGET_HEIGHT && shot->y <= target->position_y + TARGET_HEIGHT && target->isAlive)
-
-
-
-                    {
+                if (shot->x >= target->position_x - TARGET_WIDTH && shot->x <= target->position_x + TARGET_WIDTH &&
+                    shot->y >= target->position_y - TARGET_HEIGHT && shot->y <= target->position_y + TARGET_HEIGHT && target->isAlive) {
                     target->isAlive = false;
 
-                    // Znalezienie gracza, który wykonał strzał i zwiększenie jego wyniku
                     Player* shooter = findById(players, player->id);
                     if (shooter != NULL) {
                         shooter->score++;
@@ -301,7 +345,6 @@ void* connection_handler(void* socket_desc) {
                         sendTarget(sock, target);
                         current_sock = current_sock->next;
                     }
-                    // Usuwanie celu z listy
                     deleteById(&targets, target->id);
                     pthread_mutex_unlock(&mutex);
                     break;
@@ -383,10 +426,23 @@ List* insertSorted(List* list, void* data, int score) {
 
 void calculateTargetPosition(Target* target, time_t currentTime) {
     double elapsedTime = difftime(currentTime, gameStartTime);
-    target->position_y = MAP_HEIGHT / 2 + 100 * cos(elapsedTime + target->id);
-    target->position_x = (int)(100 * elapsedTime + target->id * 50) % MAP_WIDTH;
+    if (target->type == 0){
+        target->position_y = MAP_HEIGHT / 2 + 100 * cos(elapsedTime + target->id);
+        target->position_x = (int)(100 * elapsedTime + target->id * 50) % MAP_WIDTH;
+    }
 
-  // Wrap around logic if the target goes off the map
+    else if (target->type == 1){
+        int radius = 250;
+        int center_x = (int)(100 * elapsedTime + target->id * 50) % MAP_WIDTH;
+        int center_y = MAP_HEIGHT/2;
+        target->position_x = center_x + radius * cos(elapsedTime + target->id);
+        target->position_y = center_y + radius * sin(elapsedTime + target->id);
+    }
+
+    else {
+        target->position_y = MAP_HEIGHT / 2 + 100 * cos(elapsedTime + target->id);
+        target->position_x = (int)(100 * (60-elapsedTime) + target->id * 50) % MAP_WIDTH;
+    }
     if (target->position_x > MAP_WIDTH) {
         target->position_x -= MAP_WIDTH;
     }
@@ -403,5 +459,15 @@ void calculateTargetPosition(Target* target, time_t currentTime) {
 
     printf("Calculated Target ID: %d, New Position: (%d, %d)\n", target->id, target->position_x, target->position_y);
 
+}
+
+void displayLeaderboard(List* leaderboard) {
+    List* current = leaderboard;
+    printf("Leaderboard:\n");
+    while (current != NULL) {
+        Player* player = (Player*)current->data;
+        printf("Player %d: %d\n", player->id, player->score);
+        current = current->next;
+    }
 }
 
